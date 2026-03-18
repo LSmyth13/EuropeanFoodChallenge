@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>European Cooking Challenge</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,400;1,700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink:         #1C1915;
+  --parchment:   #F4EFE4;
+  --cream:       #FAF7F1;
+  --paper:       #EDE6D6;
+  --terracotta:  #C0573A;
+  --terra-light: #F0D0C5;
+  --sage:        #4E7252;
+  --sage-light:  #CBE0CC;
+  --mustard:     #C08B22;
+  --must-light:  #F2E0B0;
+  --dusty-blue:  #4E6E96;
+  --border:      rgba(28,25,21,0.14);
+  --border-mid:  rgba(28,25,21,0.22);
+  --border-strong: rgba(28,25,21,0.35);
+  --text:        #1C1915;
+  --text-muted:  #635D50;
+  --text-faint:  #9E9480;
+  --r:           3px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--parchment);
+  color: var(--text);
+  min-height: 100vh;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+/* ── Banner ── */
+.banner {
+  background: var(--ink);
+  padding: 3rem 2rem 2.5rem;
+  position: relative; overflow: hidden;
+}
+.banner::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: repeating-linear-gradient(-55deg, transparent, transparent 20px,
+    rgba(255,255,255,0.018) 20px, rgba(255,255,255,0.018) 21px);
+}
+.banner-inner { max-width: 980px; margin: 0 auto; position: relative; display: flex; align-items: flex-end; justify-content: space-between; gap: 2rem; flex-wrap: wrap; }
+.banner-eyebrow { font-size: 9px; font-weight: 500; letter-spacing: .22em; text-transform: uppercase; color: var(--terracotta); margin-bottom: .6rem; }
+.banner-title { font-family: 'Playfair Display', serif; font-size: clamp(34px,6vw,62px); font-weight: 900; font-style: italic; color: var(--cream); line-height: 1.0; margin-bottom: .75rem; }
+.banner-title em { font-style: normal; color: var(--terracotta); }
+.banner-sub { font-size: 13px; font-weight: 300; color: rgba(250,247,241,.45); max-width: 380px; line-height: 1.5; }
+.banner-deco { flex-shrink: 0; opacity: .13; }
+.banner-deco svg { width: 110px; height: 160px; }
+
+/* ── Page ── */
+.page { max-width: 980px; margin: 0 auto; padding: 2.5rem 1.5rem 6rem; }
+
+/* ── Stats ── */
+.stats { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); border: 1px solid var(--border-mid); margin-bottom: 2rem; background: var(--border); gap: 1px; }
+.stat { background: var(--cream); padding: 1rem 1.125rem; }
+.stat-label { font-size: 8px; font-weight: 500; letter-spacing: .18em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 6px; }
+.stat-val { font-family: 'Playfair Display', serif; font-size: 30px; font-weight: 700; color: var(--text); line-height: 1; }
+
+/* ── Progress ── */
+.progress-wrap { margin-bottom: 2rem; }
+.progress-meta { display: flex; justify-content: space-between; font-size: 10px; color: var(--text-faint); letter-spacing: .05em; margin-bottom: 7px; }
+.progress-bar { height: 9px; background: var(--paper); border: 1px solid var(--border); overflow: hidden; }
+.progress-fill { height: 100%; background: var(--terracotta); transition: width .65s cubic-bezier(.4,0,.2,1); background-image: repeating-linear-gradient(90deg,transparent,transparent 8px,rgba(255,255,255,.15) 8px,rgba(255,255,255,.15) 9px); }
+
+/* ── Map ── */
+.map-wrap { background: var(--cream); border: 1px solid var(--border-mid); padding: 1.25rem 1rem 1rem; margin-bottom: 2rem; }
+.map-section-label { font-size: 8px; font-weight: 500; letter-spacing: .18em; text-transform: uppercase; color: var(--text-faint); margin-bottom: .75rem; display: flex; align-items: center; gap: 10px; }
+.map-section-label::after { content:''; flex:1; height:1px; background: var(--border); }
+#map-container { width:100%; }
+#map-svg { width:100%; height:auto; display:block; }
+.map-legend { display: flex; gap: 1.5rem; margin-top: .875rem; flex-wrap: wrap; }
+.legend-item { display: flex; align-items: center; gap: 7px; font-size: 9px; font-weight: 500; letter-spacing: .1em; text-transform: uppercase; color: var(--text-faint); }
+.legend-swatch { width: 13px; height: 13px; flex-shrink: 0; border: 1px solid rgba(0,0,0,.12); }
+.map-country { cursor: pointer; transition: opacity .12s; pointer-events: all; }
+.map-country:hover { opacity: .7; }
+.map-country.status-todo    { fill: #D5CDBC; }
+.map-country.status-partial { fill: var(--mustard); }
+.map-country.status-done    { fill: var(--sage); }
+#map-tooltip { position: fixed; pointer-events: none; background: var(--ink); color: var(--cream); padding: 5px 11px; font-size: 11px; font-family: 'DM Sans', sans-serif; display: none; z-index: 300; white-space: nowrap; border-radius: var(--r); }
+
+/* ── Controls ── */
+.controls-row { display: flex; gap: 8px; margin-bottom: .75rem; flex-wrap: wrap; align-items: center; }
+.controls-row input { flex:1; min-width:200px; padding:8px 12px; font-size:13px; border:1px solid var(--border-mid); background:var(--cream); color:var(--text); font-family:inherit; outline:none; border-radius:var(--r); }
+.controls-row input:focus { border-color:var(--terracotta); }
+.controls-row input::placeholder { color:var(--text-faint); }
+.filter-btn { padding:7px 16px; font-size:9px; font-weight:500; letter-spacing:.12em; text-transform:uppercase; border:1px solid var(--border-mid); background:transparent; color:var(--text-muted); cursor:pointer; font-family:inherit; transition:all .13s; border-radius:var(--r); }
+.filter-btn:hover { border-color:var(--border-strong); color:var(--text); }
+.filter-btn.active { background:var(--ink); color:var(--cream); border-color:var(--ink); }
+
+/* ── Section label ── */
+.section-label { font-size: 8px; font-weight: 500; letter-spacing: .18em; text-transform: uppercase; color: var(--text-faint); display: flex; align-items: center; gap: 10px; margin-bottom: 1rem; }
+.section-label::after { content:''; flex:1; height:1px; background:var(--border); }
+
+/* ── Grid ── */
+.grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(195px,1fr)); gap:1px; background:var(--border-mid); border:1px solid var(--border-mid); }
+.card { background:var(--cream); padding:.875rem 1rem; cursor:pointer; transition:background .12s; position:relative; }
+.card:hover { background:var(--paper); }
+.card.done    { box-shadow:inset 3px 0 0 var(--sage); }
+.card.partial { box-shadow:inset 3px 0 0 var(--mustard); }
+.card-top { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:5px; }
+.country-name { font-size:13px; font-weight:500; color:var(--text); line-height:1.25; }
+.region-tag { font-size:8px; color:var(--text-faint); letter-spacing:.07em; text-transform:uppercase; margin-top:2px; }
+.flag { font-size:17px; line-height:1; }
+.dish-row { display:flex; align-items:center; gap:5px; font-size:11px; color:var(--text-muted); margin-bottom:3px; flex-wrap:wrap; }
+.dish-type { font-size:8px; padding:1px 5px; font-weight:500; letter-spacing:.05em; text-transform:uppercase; flex-shrink:0; }
+.dish-type.main    { background:var(--sage-light); color:var(--sage); }
+.dish-type.dessert { background:var(--must-light); color:var(--mustard); }
+.dish-name-text { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:110px; }
+.mini-stars { color:var(--mustard); font-size:9px; letter-spacing:-1px; }
+.add-btn { display:flex; align-items:center; justify-content:center; gap:4px; margin-top:8px; font-size:9px; font-weight:500; letter-spacing:.1em; text-transform:uppercase; color:var(--text-faint); background:none; border:1px dashed var(--border-mid); padding:4px 8px; cursor:pointer; width:100%; font-family:inherit; transition:all .13s; border-radius:var(--r); }
+.add-btn:hover { color:var(--terracotta); border-color:var(--terracotta); }
+
+/* ── Overlay / Panel ── */
+.overlay { position:fixed; inset:0; background:rgba(28,25,21,.55); z-index:200; display:flex; align-items:flex-start; justify-content:center; padding:40px 16px; overflow-y:auto; }
+.panel { background:var(--cream); border:1px solid var(--border-strong); width:100%; max-width:560px; overflow:hidden; flex-shrink:0; border-radius:var(--r); }
+.panel-header { display:flex; align-items:center; justify-content:space-between; padding:1rem 1.25rem; border-bottom:1px solid var(--border); position:sticky; top:0; background:var(--cream); z-index:1; }
+.panel-title { font-family:'Playfair Display',serif; font-size:19px; font-weight:700; color:var(--text); }
+.close-btn { background:none; border:1px solid var(--border-mid); font-size:15px; color:var(--text-muted); cursor:pointer; padding:2px 9px; border-radius:var(--r); transition:all .12s; line-height:1.4; }
+.close-btn:hover { background:var(--paper); border-color:var(--border-strong); }
+.panel-body { padding:1.25rem; }
+.empty-state { font-size:13px; color:var(--text-faint); margin-bottom:1rem; font-style:italic; }
+
+/* ── Dish card ── */
+.dish-card { border:1px solid var(--border); background:var(--parchment); padding:.875rem; margin-bottom:.75rem; border-radius:var(--r); }
+.dish-card-header { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+.dish-card-name { font-size:14px; font-weight:500; color:var(--text); flex:1; }
+.dish-actions { display:flex; gap:6px; }
+.icon-btn { background:none; border:1px solid var(--border-mid); padding:2px 8px; font-size:9px; font-weight:500; letter-spacing:.07em; text-transform:uppercase; color:var(--text-muted); cursor:pointer; font-family:inherit; transition:all .12s; border-radius:var(--r); }
+.icon-btn:hover { border-color:var(--border-strong); color:var(--text); }
+.icon-btn.danger:hover { color:var(--terracotta); border-color:var(--terracotta); }
+.stars-display { color:var(--mustard); font-size:15px; letter-spacing:-1px; margin-bottom:4px; }
+.review-text { font-size:12px; color:var(--text-muted); margin-top:4px; line-height:1.55; font-style:italic; }
+.recipe-toggle { font-size:9px; font-weight:500; letter-spacing:.08em; text-transform:uppercase; color:var(--dusty-blue); cursor:pointer; margin-top:6px; background:none; border:none; padding:0; text-decoration:underline; text-underline-offset:2px; font-family:inherit; }
+.recipe-box { font-size:12px; color:var(--text-muted); margin-top:6px; line-height:1.65; white-space:pre-wrap; background:var(--paper); padding:.625rem .875rem; border:1px solid var(--border); border-radius:var(--r); }
+.cooked-date { font-size:10px; color:var(--text-faint); margin-top:4px; letter-spacing:.03em; }
+.source-link { font-size:11px; font-weight:500; color:var(--dusty-blue); text-decoration:none; display:inline-block; margin-top:4px; }
+.source-link:hover { text-decoration:underline; }
+
+/* ── Form ── */
+.form-section { border:1px solid var(--border); background:var(--parchment); padding:1rem; margin-bottom:.75rem; border-radius:var(--r); }
+.form-title { font-size:8px; font-weight:500; color:var(--text-faint); text-transform:uppercase; letter-spacing:.18em; margin-bottom:.875rem; }
+.field { margin-bottom:.75rem; }
+.field:last-child { margin-bottom:0; }
+.field label { display:block; font-size:9px; font-weight:500; letter-spacing:.1em; text-transform:uppercase; color:var(--text-faint); margin-bottom:5px; }
+.field input,.field select,.field textarea { width:100%; padding:7px 10px; font-size:13px; border:1px solid var(--border-mid); background:var(--cream); color:var(--text); font-family:inherit; outline:none; transition:border-color .15s; border-radius:var(--r); }
+.field input:focus,.field select:focus,.field textarea:focus { border-color:var(--terracotta); }
+.field textarea { resize:vertical; min-height:80px; line-height:1.55; }
+.two-col { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.star-picker { display:flex; gap:6px; }
+.star-btn { background:none; border:none; font-size:24px; cursor:pointer; padding:0; line-height:1; color:#ccc; transition:color .1s,transform .1s; }
+.star-btn:hover { transform:scale(1.15); }
+.star-btn.lit { color:var(--mustard); }
+.form-actions { display:flex; gap:8px; justify-content:flex-end; margin-top:1rem; }
+.btn-primary { padding:8px 22px; font-size:9px; font-weight:500; letter-spacing:.14em; text-transform:uppercase; border:none; background:var(--terracotta); color:#fff; cursor:pointer; font-family:inherit; transition:opacity .15s; border-radius:var(--r); }
+.btn-primary:hover { opacity:.85; }
+.btn-ghost { padding:8px 16px; font-size:9px; font-weight:500; letter-spacing:.1em; text-transform:uppercase; border:1px solid var(--border-mid); background:transparent; color:var(--text-muted); cursor:pointer; font-family:inherit; transition:all .13s; border-radius:var(--r); }
+.btn-ghost:hover { border-color:var(--border-strong); color:var(--text); }
+
+/* ── View tabs ── */
+.view-tabs { display:flex; gap:1px; background:var(--border-mid); border:1px solid var(--border-mid); margin-bottom:2rem; }
+.view-tab { flex:1; padding:10px 16px; font-size:9px; font-weight:500; letter-spacing:.16em; text-transform:uppercase; background:var(--cream); color:var(--text-muted); border:none; cursor:pointer; font-family:inherit; transition:all .13s; text-align:center; }
+.view-tab:hover { background:var(--paper); color:var(--text); }
+.view-tab.active { background:var(--ink); color:var(--cream); }
+
+/* ── Recipe search ── */
+.recipe-search-bar { display:flex; gap:8px; margin-bottom:1.25rem; flex-wrap:wrap; }
+.recipe-search-bar input { flex:1; min-width:220px; padding:9px 14px; font-size:14px; border:1px solid var(--border-mid); background:var(--cream); color:var(--text); font-family:inherit; outline:none; border-radius:var(--r); }
+.recipe-search-bar input:focus { border-color:var(--terracotta); }
+.recipe-search-bar input::placeholder { color:var(--text-faint); }
+.recipe-filter-row { display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-bottom:1.5rem; }
+.r-filter-btn { padding:5px 13px; font-size:8px; font-weight:500; letter-spacing:.1em; text-transform:uppercase; border:1px solid var(--border-mid); background:transparent; color:var(--text-muted); cursor:pointer; font-family:inherit; transition:all .13s; border-radius:var(--r); }
+.r-filter-btn:hover { border-color:var(--border-strong); color:var(--text); }
+.r-filter-btn.active { background:var(--ink); color:var(--cream); border-color:var(--ink); }
+
+.recipe-results-meta { font-size:10px; color:var(--text-faint); letter-spacing:.04em; margin-bottom:1rem; }
+
+.recipe-result { background:var(--cream); border:1px solid var(--border); margin-bottom:.75rem; border-radius:var(--r); overflow:hidden; cursor:pointer; transition:border-color .12s; }
+.recipe-result:hover { border-color:var(--border-strong); }
+.recipe-result-header { display:flex; align-items:center; gap:10px; padding:.75rem 1rem; border-bottom:1px solid var(--border); flex-wrap:wrap; }
+.recipe-result-flag { font-size:18px; flex-shrink:0; }
+.recipe-result-country { font-size:10px; font-weight:500; letter-spacing:.1em; text-transform:uppercase; color:var(--text-faint); }
+.recipe-result-name { font-family:'Playfair Display',serif; font-size:16px; font-weight:700; color:var(--text); flex:1; }
+.recipe-result-meta { display:flex; align-items:center; gap:8px; flex-shrink:0; }
+.recipe-result-body { padding:.75rem 1rem; }
+.recipe-snippet { font-size:12px; color:var(--text-muted); line-height:1.6; }
+.recipe-snippet mark { background:var(--must-light); color:var(--ink); border-radius:2px; padding:0 2px; }
+.recipe-no-results { text-align:center; padding:3rem 1rem; color:var(--text-faint); font-style:italic; font-size:14px; }
+
+/* ── Countdown ── */
+.countdown-wrap {
+  display: grid; grid-template-columns: repeat(4, minmax(0,1fr));
+  gap: 1px; background: var(--border); border: 1px solid var(--border-mid);
+  margin-bottom: 2rem;
+}
+.countdown-cell {
+  background: var(--paper); padding: .875rem 1rem; text-align: center; position: relative;
+}
+.countdown-num {
+  font-family: 'Playfair Display', serif; font-size: clamp(28px,5vw,46px);
+  font-weight: 900; color: var(--ink); line-height: 1; display: block;
+  transition: opacity .2s;
+}
+.countdown-unit {
+  font-size: 8px; font-weight: 500; letter-spacing: .18em; text-transform: uppercase;
+  color: var(--text-faint); margin-top: 5px; display: block;
+}
+.countdown-deadline {
+  font-size: 9px; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--terracotta); margin-bottom: .6rem; font-weight: 500;
+}
+.countdown-urgency {
+  font-size: 10px; color: var(--text-faint); font-style: italic; margin-top: .5rem; text-align: right;
+}
+
+@media (max-width:640px) {
+  .stats { grid-template-columns:repeat(2,1fr); }
+  .countdown-wrap { grid-template-columns:repeat(2,1fr); }
+  .grid { grid-template-columns:repeat(auto-fill,minmax(155px,1fr)); }
+  .overlay { padding:0; align-items:flex-end; }
+  .panel { border-radius:var(--r) var(--r) 0 0; max-width:100%; }
+  .two-col { grid-template-columns:1fr; }
+  .banner { padding:2rem 1.25rem; }
+}
+</style>
+</head>
+<body>
+
+<div class="banner">
+  <div class="banner-inner">
+    <div>
+      <div class="banner-eyebrow">A culinary journey across Europe</div>
+      <h1 class="banner-title">European<br><em>Cooking</em> Challenge</h1>
+      <p class="banner-sub">Cook one dish from every country — log your recipes, ratings &amp; tasting notes along the way.</p>
+    </div>
+    <div class="banner-deco" aria-hidden="true">
+      <svg viewBox="0 0 110 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M55 8 Q70 40 48 72 Q28 104 55 130 Q80 155 60 158" stroke="white" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+        <circle cx="47" cy="38" r="7" stroke="white" stroke-width="1.2" fill="none"/>
+        <circle cx="53" cy="90" r="9.5" stroke="white" stroke-width="1.2" fill="none"/>
+        <circle cx="50" cy="138" r="6" stroke="white" stroke-width="1.2" fill="none"/>
+        <path d="M47 38 Q30 26 22 33" stroke="white" stroke-width="1" fill="none" stroke-linecap="round"/>
+        <path d="M47 38 Q60 22 70 28" stroke="white" stroke-width="1" fill="none" stroke-linecap="round"/>
+        <path d="M53 90 Q38 80 30 86" stroke="white" stroke-width="1" fill="none" stroke-linecap="round"/>
+        <path d="M53 90 Q72 78 80 85" stroke="white" stroke-width="1" fill="none" stroke-linecap="round"/>
+        <path d="M50 138 Q33 128 26 135" stroke="white" stroke-width="1" fill="none" stroke-linecap="round"/>
+        <circle cx="22" cy="33" r="3" stroke="white" stroke-width="1" fill="none"/>
+        <circle cx="70" cy="28" r="4" stroke="white" stroke-width="1" fill="none"/>
+        <circle cx="30" cy="86" r="3.5" stroke="white" stroke-width="1" fill="none"/>
+        <circle cx="80" cy="85" r="5" stroke="white" stroke-width="1" fill="none"/>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<div class="page">
+  <div class="stats" id="stats"></div>
+  <div class="progress-wrap">
+    <div class="progress-meta"><span id="prog-label"></span><span id="prog-pct"></span></div>
+    <div class="progress-bar"><div class="progress-fill" id="prog-fill" style="width:0%"></div></div>
+  </div>
+
+  <div>
+    <div class="countdown-deadline">Deadline — 31 December 2026</div>
+    <div class="countdown-wrap">
+      <div class="countdown-cell"><span class="countdown-num" id="cd-days">—</span><span class="countdown-unit">Days</span></div>
+      <div class="countdown-cell"><span class="countdown-num" id="cd-hours">—</span><span class="countdown-unit">Hours</span></div>
+      <div class="countdown-cell"><span class="countdown-num" id="cd-mins">—</span><span class="countdown-unit">Minutes</span></div>
+      <div class="countdown-cell"><span class="countdown-num" id="cd-secs">—</span><span class="countdown-unit">Seconds</span></div>
+    </div>
+    <div class="countdown-urgency" id="cd-urgency"></div>
+  </div>
+  <div class="map-wrap">
+    <div class="map-section-label">Progress map</div>
+    <div id="map-container"></div>
+    <div class="map-legend">
+      <div class="legend-item"><div class="legend-swatch" style="background:var(--sage)"></div>Done</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:var(--mustard)"></div>In progress</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#D5CDBC"></div>Not started</div>
+    </div>
+  </div>
+  <div id="map-tooltip"></div>
+  <div class="view-tabs">
+    <button class="view-tab active" id="tab-tracker" onclick="switchTab('tracker')">Tracker</button>
+    <button class="view-tab" id="tab-recipes" onclick="switchTab('recipes')">Recipe search</button>
+  </div>
+
+  <div id="view-tracker">
+    <div class="controls-row">
+      <input id="srch" placeholder="Search countries…" oninput="onSearch(this.value)">
+      <button class="filter-btn active" id="f-all"  onclick="setFilter('all')">All</button>
+      <button class="filter-btn"        id="f-done" onclick="setFilter('done')">Done</button>
+      <button class="filter-btn"        id="f-todo" onclick="setFilter('todo')">To do</button>
+    </div>
+    <div class="controls-row" style="margin-bottom:1.25rem">
+      <span style="font-size:9px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--text-faint)">Region:</span>
+      <button class="filter-btn active" id="r-all"      onclick="setRegion('all')">All</button>
+      <button class="filter-btn"        id="r-Western"  onclick="setRegion('Western')">Western</button>
+      <button class="filter-btn"        id="r-Central"  onclick="setRegion('Central')">Central</button>
+      <button class="filter-btn"        id="r-Eastern"  onclick="setRegion('Eastern')">Eastern</button>
+      <button class="filter-btn"        id="r-Nordic"   onclick="setRegion('Nordic')">Nordic</button>
+      <button class="filter-btn"        id="r-Southern" onclick="setRegion('Southern')">Southern</button>
+      <button class="filter-btn"        id="r-Balkans"  onclick="setRegion('Balkans')">Balkans</button>
+      <button class="filter-btn"        id="r-Baltic"   onclick="setRegion('Baltic')">Baltic</button>
+    </div>
+    <div class="section-label">Countries</div>
+    <div class="grid" id="grid"></div>
+  </div>
+
+  <div id="view-recipes" style="display:none">
+    <div class="recipe-search-bar">
+      <input id="recipe-srch" placeholder="Search dish names, recipes, notes, ingredients…" oninput="onRecipeSearch()">
+    </div>
+    <div class="recipe-filter-row">
+      <span style="font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-faint);margin-right:4px">Type:</span>
+      <button class="r-filter-btn active" id="rf-all"     onclick="setRecipeFilter('all')">All</button>
+      <button class="r-filter-btn"        id="rf-main"    onclick="setRecipeFilter('main')">Mains</button>
+      <button class="r-filter-btn"        id="rf-dessert" onclick="setRecipeFilter('dessert')">Desserts</button>
+      <span style="font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-faint);margin-left:12px;margin-right:4px">Sort:</span>
+      <button class="r-filter-btn active" id="rs-country" onclick="setRecipeSort('country')">Country</button>
+      <button class="r-filter-btn"        id="rs-rating"  onclick="setRecipeSort('rating')">Rating</button>
+      <button class="r-filter-btn"        id="rs-date"    onclick="setRecipeSort('date')">Date cooked</button>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:1.25rem;flex-wrap:wrap">
+      <span style="font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-faint);flex-shrink:0">Ingredient:</span>
+      <input id="ingredient-srch" placeholder="e.g. chicken, butter, garlic…" oninput="onRecipeSearch()" style="flex:1;min-width:180px;padding:7px 12px;font-size:13px;border:1px solid var(--border-mid);background:var(--cream);color:var(--text);font-family:inherit;outline:none;border-radius:var(--r);">
+      <div id="ingredient-tags" style="display:flex;gap:5px;flex-wrap:wrap"></div>
+    </div>
+    <div class="recipe-results-meta" id="recipe-meta"></div>
+    <div id="recipe-results"></div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay" style="display:none" onclick="overlayClick(event)"></div>
+
+<script>
+const COUNTRIES=[
+  {name:"Albania",flag:"🇦🇱",region:"Balkans"},{name:"Andorra",flag:"🇦🇩",region:"Western"},{name:"Austria",flag:"🇦🇹",region:"Central"},
+  {name:"Belarus",flag:"🇧🇾",region:"Eastern"},{name:"Belgium",flag:"🇧🇪",region:"Western"},{name:"Bosnia & Herzegovina",flag:"🇧🇦",region:"Balkans"},
+  {name:"Bulgaria",flag:"🇧🇬",region:"Eastern"},{name:"Croatia",flag:"🇭🇷",region:"Balkans"},{name:"Cyprus",flag:"🇨🇾",region:"Southern"},
+  {name:"Czech Republic",flag:"🇨🇿",region:"Central"},{name:"Denmark",flag:"🇩🇰",region:"Nordic"},{name:"Estonia",flag:"🇪🇪",region:"Baltic"},
+  {name:"Finland",flag:"🇫🇮",region:"Nordic"},{name:"France",flag:"🇫🇷",region:"Western"},{name:"Germany",flag:"🇩🇪",region:"Central"},
+  {name:"Greece",flag:"🇬🇷",region:"Southern"},{name:"Hungary",flag:"🇭🇺",region:"Central"},{name:"Iceland",flag:"🇮🇸",region:"Nordic"},
+  {name:"Ireland",flag:"🇮🇪",region:"Western"},{name:"Italy",flag:"🇮🇹",region:"Southern"},{name:"Kosovo",flag:"🇽🇰",region:"Balkans"},
+  {name:"Latvia",flag:"🇱🇻",region:"Baltic"},{name:"Liechtenstein",flag:"🇱🇮",region:"Central"},{name:"Lithuania",flag:"🇱🇹",region:"Baltic"},
+  {name:"Luxembourg",flag:"🇱🇺",region:"Western"},{name:"Malta",flag:"🇲🇹",region:"Southern"},{name:"Moldova",flag:"🇲🇩",region:"Eastern"},
+  {name:"Monaco",flag:"🇲🇨",region:"Western"},{name:"Montenegro",flag:"🇲🇪",region:"Balkans"},{name:"Netherlands",flag:"🇳🇱",region:"Western"},
+  {name:"North Macedonia",flag:"🇲🇰",region:"Balkans"},{name:"Norway",flag:"🇳🇴",region:"Nordic"},{name:"Poland",flag:"🇵🇱",region:"Central"},
+  {name:"Portugal",flag:"🇵🇹",region:"Western"},{name:"Romania",flag:"🇷🇴",region:"Eastern"},{name:"Russia",flag:"🇷🇺",region:"Eastern"},
+  {name:"San Marino",flag:"🇸🇲",region:"Southern"},{name:"Serbia",flag:"🇷🇸",region:"Balkans"},{name:"Slovakia",flag:"🇸🇰",region:"Central"},
+  {name:"Slovenia",flag:"🇸🇮",region:"Central"},{name:"Spain",flag:"🇪🇸",region:"Southern"},{name:"Sweden",flag:"🇸🇪",region:"Nordic"},
+  {name:"Switzerland",flag:"🇨🇭",region:"Central"},{name:"Ukraine",flag:"🇺🇦",region:"Eastern"},{name:"United Kingdom",flag:"🇬🇧",region:"Western"},
+  {name:"Vatican City",flag:"🇻🇦",region:"Southern"}
+];
+
+let data={};
+let filter='all',search='',activeCountry=null,editIdx=null,showForm=false,recipeOpen={},formStar=0;
+
+try{data=JSON.parse(localStorage.getItem('eu_cook_v2')||'{}')}catch(e){}
+function save(){try{localStorage.setItem('eu_cook_v2',JSON.stringify(data))}catch(e){}}
+
+function getStatus(name){
+  const d=data[name];
+  if(!d||!d.dishes||!d.dishes.length)return'todo';
+  return d.dishes.some(x=>x.type==='main')?'done':'partial';
+}
+
+let mapReady=false;
+function initMap(){
+  const W=900,H=560;
+  const svg=d3.select('#map-container').append('svg').attr('id','map-svg').attr('viewBox',`0 0 ${W} ${H}`).attr('preserveAspectRatio','xMidYMid meet');
+  const proj=d3.geoMercator().center([15,54]).scale(620).translate([W/2,H/2]);
+  const path=d3.geoPath().projection(proj);
+  const tooltip=document.getElementById('map-tooltip');
+  const ISO_NAMES={8:'Albania',20:'Andorra',40:'Austria',112:'Belarus',56:'Belgium',70:'Bosnia & Herzegovina',100:'Bulgaria',191:'Croatia',196:'Cyprus',203:'Czech Republic',208:'Denmark',233:'Estonia',246:'Finland',250:'France',276:'Germany',300:'Greece',348:'Hungary',352:'Iceland',372:'Ireland',380:'Italy',383:'Kosovo',428:'Latvia',438:'Liechtenstein',440:'Lithuania',442:'Luxembourg',470:'Malta',498:'Moldova',492:'Monaco',499:'Montenegro',528:'Netherlands',807:'North Macedonia',578:'Norway',616:'Poland',620:'Portugal',642:'Romania',643:'Russia',674:'San Marino',688:'Serbia',703:'Slovakia',705:'Slovenia',724:'Spain',752:'Sweden',756:'Switzerland',804:'Ukraine',826:'United Kingdom',336:'Vatican City'};
+  fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json')
+    .then(r=>r.json())
+    .then(world=>{
+      const countries=topojson.feature(world,world.objects.countries);
+      svg.append('g').selectAll('path').data(countries.features).join('path').attr('d',path)
+        .each(function(d){
+          const nm=ISO_NAMES[+d.id];
+          if(nm){
+            d3.select(this).attr('data-country',nm).attr('class','map-country status-todo')
+              .style('stroke','#F4EFE4').style('stroke-width','0.45')
+              .on('click',()=>openCountry(nm))
+              .on('mousemove',(ev)=>{
+                tooltip.style.display='block';
+                tooltip.style.left=(ev.clientX+14)+'px';
+                tooltip.style.top=(ev.clientY-30)+'px';
+                const dishes=(data[nm]||{}).dishes||[];
+                const flag=(COUNTRIES.find(c=>c.name===nm)||{}).flag||'';
+                tooltip.innerHTML=`<strong>${flag} ${nm}</strong>${dishes.length?' — '+dishes.map(x=>x.name).join(', '):''}`;
+              })
+              .on('mouseleave',()=>{tooltip.style.display='none';});
+          } else {
+            d3.select(this).style('fill','#E6DFCF').style('stroke','#F4EFE4').style('stroke-width','0.3');
+          }
+        });
+
+      // Kosovo — hardcoded real border coords (not in Natural Earth dataset)
+      const kosovoRaw = [
+        [20.0762,42.5558],[20.2834,42.3199],[20.4896,42.2319],[20.5234,42.2164],
+        [20.5639,42.1259],[20.5989,41.8790],[20.6352,41.8554],[20.6519,41.8124],
+        [20.7153,41.7996],[20.7681,41.9190],[20.8343,41.9940],[20.9659,41.8475],
+        [21.0584,42.1701],[21.1782,42.2004],[21.3332,42.2065],[21.4382,42.2781],
+        [21.4382,42.3695],[21.5612,42.4476],[21.6397,42.6719],[21.7733,42.6833],
+        [21.7397,42.7953],[21.6632,42.9010],[21.4618,43.0116],[21.3465,43.0040],
+        [21.1411,42.9277],[20.9618,43.0934],[20.8119,43.1366],[20.6439,43.0938],
+        [20.4893,42.9598],[20.3533,42.8327],[20.2659,42.8183],[20.0762,42.5558]
+      ];
+      const kosovoPoints = kosovoRaw.map(c => proj(c));
+      const kosovoPathD = 'M' + kosovoPoints.map(p => p[0].toFixed(1)+','+p[1].toFixed(1)).join('L') + 'Z';
+      const kosovoG = svg.append('g').attr('data-country','Kosovo').attr('class','map-country status-todo')
+        .style('cursor','pointer')
+        .on('click',()=>openCountry('Kosovo'))
+        .on('mousemove',(ev)=>{
+          tooltip.style.display='block';
+          tooltip.style.left=(ev.clientX+14)+'px';
+          tooltip.style.top=(ev.clientY-30)+'px';
+          const dishes=(data['Kosovo']||{}).dishes||[];
+          tooltip.innerHTML=`<strong>🇽🇰 Kosovo</strong>${dishes.length?' — '+dishes.map(x=>x.name).join(', '):''}`;
+        })
+        .on('mouseleave',()=>{tooltip.style.display='none';});
+      kosovoG.append('path')
+        .attr('d', kosovoPathD)
+        .style('fill','#D5CDBC').style('stroke','#F4EFE4').style('stroke-width','0.45');
+
+      svg.append('path').datum(topojson.mesh(world,world.objects.countries,(a,b)=>a!==b))
+        .attr('fill','none').attr('stroke','#F4EFE4').attr('stroke-width','0.5').attr('d',path);
+      mapReady=true; renderMap();
+    })
+    .catch(()=>{document.getElementById('map-container').innerHTML='<p style="font-size:13px;color:var(--text-faint);padding:.5rem;font-style:italic">Map requires internet to load.</p>';});
+}
+function renderMap(){
+  if(!mapReady)return;
+  const fills={'todo':'#D5CDBC','partial':'#C08B22','done':'#4E7252'};
+  document.querySelectorAll('#map-svg [data-country]').forEach(el=>{
+    const name=el.getAttribute('data-country');
+    const st=getStatus(name);
+    el.setAttribute('class','map-country status-'+st);
+    if(name==='Kosovo'){
+      const p=el.querySelector('path');
+      if(p) p.style.fill=fills[st]||fills.todo;
+    }
+  });
+}
+
+function renderStats(){
+  const done=COUNTRIES.filter(c=>getStatus(c.name)==='done').length;
+  const partial=COUNTRIES.filter(c=>getStatus(c.name)==='partial').length;
+  const total=COUNTRIES.length;
+  const allD=Object.values(data).flatMap(d=>d.dishes||[]);
+  const mains=allD.filter(d=>d.type==='main').length;
+  const rated=allD.filter(d=>d.rating>0);
+  const avg=rated.length?(rated.reduce((a,b)=>a+b.rating,0)/rated.length).toFixed(1):'—';
+  const pct=Math.round(done/total*100);
+  document.getElementById('stats').innerHTML=`
+    <div class="stat"><div class="stat-label">Countries done</div><div class="stat-val">${done}</div></div>
+    <div class="stat"><div class="stat-label">In progress</div><div class="stat-val">${partial}</div></div>
+    <div class="stat"><div class="stat-label">Mains cooked</div><div class="stat-val">${mains}</div></div>
+    <div class="stat"><div class="stat-label">Avg rating</div><div class="stat-val">${avg}${rated.length?' ★':''}</div></div>`;
+  document.getElementById('prog-label').textContent=`${done} of ${total} countries`;
+  document.getElementById('prog-pct').textContent=pct+'%';
+  document.getElementById('prog-fill').style.width=pct+'%';
+}
+
+function renderGrid(){
+  const filtered=COUNTRIES.filter(c=>{
+    if(filter==='done'&&getStatus(c.name)!=='done')return false;
+    if(filter==='todo'&&getStatus(c.name)!=='todo')return false;
+    if(regionFilter!=='all'&&c.region!==regionFilter)return false;
+    if(search&&!c.name.toLowerCase().includes(search.toLowerCase()))return false;
+    return true;
+  });
+  document.getElementById('grid').innerHTML=filtered.map(c=>{
+    const st=getStatus(c.name);
+    const dishes=(data[c.name]||{}).dishes||[];
+    return`<div class="card ${st==='done'?'done':st==='partial'?'partial':''}" onclick="openCountry('${esc(c.name)}')">
+      <div class="card-top">
+        <div><div class="country-name">${c.name}</div><div class="region-tag">${c.region}</div></div>
+        <span class="flag">${c.flag}</span>
+      </div>
+      ${dishes.map(d=>`<div class="dish-row"><span class="dish-type ${d.type}">${d.type}</span><span class="dish-name-text">${d.name}</span>${d.rating?`<span class="mini-stars">${'★'.repeat(d.rating)}</span>`:''}</div>`).join('')}
+      <button class="add-btn" onclick="event.stopPropagation();openCountry('${esc(c.name)}',true)">+ add dish</button>
+    </div>`;
+  }).join('');
+}
+
+function renderPanel(){
+  const overlay=document.getElementById('overlay');
+  if(!activeCountry){overlay.style.display='none';return;}
+  const c=COUNTRIES.find(x=>x.name===activeCountry);
+  const dishes=(data[activeCountry]||{}).dishes||[];
+  overlay.style.display='flex';
+  overlay.innerHTML=`<div class="panel" onclick="event.stopPropagation()">
+    <div class="panel-header"><span class="panel-title">${c.flag} ${c.name}</span><button class="close-btn" onclick="closePanel()">×</button></div>
+    <div class="panel-body">
+      ${!dishes.length&&!showForm?'<p class="empty-state">No dishes logged yet.</p>':''}
+      ${dishes.map((d,i)=>editIdx===i&&showForm?renderForm(d,i):renderDishCard(d,i)).join('')}
+      ${showForm&&editIdx===null?renderForm(null,null):''}
+      ${!showForm?`<button class="add-btn" onclick="startAdd()">+ add dish</button>`:''}
+    </div>
+  </div>`;
+  if(showForm){
+    const sp=document.getElementById('star-picker');
+    if(sp)sp.querySelectorAll('.star-btn').forEach((b,i)=>{
+      b.classList.toggle('lit',formStar>i);
+      b.onmouseover=()=>hoverS(i+1); b.onmouseout=()=>hoverS(0); b.onclick=()=>pickStar(i+1);
+    });
+  }
+}
+
+function renderDishCard(d,i){
+  const rk=activeCountry+'_'+i, ro=recipeOpen[rk];
+  const ingList=(d.ingredients||[]);
+  return`<div class="dish-card">
+    <div class="dish-card-header">
+      <span class="dish-type ${d.type}">${d.type}</span>
+      <span class="dish-card-name">${d.name}</span>
+      <div class="dish-actions">
+        <button class="icon-btn" onclick="startEdit(${i})">Edit</button>
+        <button class="icon-btn danger" onclick="removeDish(${i})">Remove</button>
+      </div>
+    </div>
+    ${d.rating?`<div class="stars-display">${'★'.repeat(d.rating)}${'☆'.repeat(5-d.rating)}</div>`:''}
+    ${d.review?`<div class="review-text">"${d.review}"</div>`:''}
+    ${ingList.length?`<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px">${ingList.map(ing=>`<span style="font-size:10px;background:var(--paper);border:1px solid var(--border);padding:1px 7px;border-radius:10px;color:var(--text-muted)">${ing}</span>`).join('')}</div>`:''}
+    ${d.cookedDate?`<div class="cooked-date">Cooked: ${d.cookedDate}</div>`:''}
+    ${d.source?`<a class="source-link" href="${d.source}" target="_blank" rel="noopener">View recipe source ↗</a>`:''}
+    ${d.recipe?`<button class="recipe-toggle" onclick="toggleRecipe('${rk}')">${ro?'Hide recipe':'Show recipe'}</button>`:''}
+    ${d.recipe&&ro?`<div class="recipe-box">${d.recipe}</div>`:''}
+  </div>`;
+}
+
+function renderForm(d,idx){
+  const isEdit=idx!==null&&idx!==undefined;
+  const ingVal=d&&d.ingredients?(d.ingredients).join(', '):'';
+  return`<div class="form-section">
+    <div class="form-title">${isEdit?'Edit dish':'New dish'}</div>
+    <div class="field"><label>Dish name</label><input id="f-name" value="${d?esc2(d.name):''}" placeholder="e.g. Wiener Schnitzel"></div>
+    <div class="two-col">
+      <div class="field"><label>Type</label><select id="f-type">
+        <option value="main"${(!d||d.type==='main')?' selected':''}>Main</option>
+        <option value="dessert"${d&&d.type==='dessert'?' selected':''}>Dessert</option>
+      </select></div>
+      <div class="field"><label>Date cooked</label><input id="f-date" type="date" value="${d&&d.cookedDate?d.cookedDate:''}"></div>
+    </div>
+    <div class="field"><label>Rating</label>
+      <div class="star-picker" id="star-picker">
+        ${[1,2,3,4,5].map(n=>`<button class="star-btn${formStar>=n?' lit':''}" data-n="${n}">★</button>`).join('')}
+      </div>
+    </div>
+    <div class="field"><label>Ingredients <span style="font-weight:300;text-transform:none;letter-spacing:0">(comma-separated)</span></label><input id="f-ingredients" value="${esc2(ingVal)}" placeholder="e.g. chicken, garlic, paprika, onion"></div>
+    <div class="field"><label>Review / tasting notes</label><textarea id="f-review">${d&&d.review?d.review:''}</textarea></div>
+    <div class="field"><label>Recipe steps</label><textarea id="f-recipe" style="min-height:100px">${d&&d.recipe?d.recipe:''}</textarea></div>
+    <div class="field"><label>Recipe source URL</label><input id="f-source" type="url" placeholder="https://…" value="${d&&d.source?d.source:''}"></div>
+    <div class="form-actions">
+      <button class="btn-ghost" onclick="cancelForm()">Cancel</button>
+      <button class="btn-primary" onclick="saveDish(${isEdit?idx:'null'})">${isEdit?'Save changes':'Add dish'}</button>
+    </div>
+  </div>`;
+}
+
+let recipeQuery='', recipeTypeFilter='all', recipeSort='country', activeTab='tracker', regionFilter='all';
+
+function switchTab(tab){
+  activeTab=tab;
+  document.getElementById('view-tracker').style.display=tab==='tracker'?'':'none';
+  document.getElementById('view-recipes').style.display=tab==='recipes'?'':'none';
+  document.getElementById('tab-tracker').classList.toggle('active',tab==='tracker');
+  document.getElementById('tab-recipes').classList.toggle('active',tab==='recipes');
+  if(tab==='recipes') renderRecipeSearch();
+}
+
+function setRegion(r){
+  regionFilter=r;
+  ['all','Western','Central','Eastern','Nordic','Southern','Balkans','Baltic'].forEach(x=>{
+    const el=document.getElementById('r-'+x);
+    if(el) el.classList.toggle('active',x===r);
+  });
+  renderGrid();
+}
+
+function onRecipeSearch(){
+  recipeQuery=document.getElementById('recipe-srch').value;
+  renderRecipeSearch();
+}
+
+function setRecipeFilter(f){
+  recipeTypeFilter=f;
+  ['all','main','dessert'].forEach(x=>document.getElementById('rf-'+x).classList.toggle('active',x===f));
+  renderRecipeSearch();
+}
+
+function setRecipeSort(s){
+  recipeSort=s;
+  ['country','rating','date'].forEach(x=>document.getElementById('rs-'+x).classList.toggle('active',x===s));
+  renderRecipeSearch();
+}
+
+function highlight(text, q){
+  if(!q||!text) return text||'';
+  const safe=q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  return text.replace(new RegExp(safe,'gi'), m=>`<mark>${m}</mark>`);
+}
+
+function snippet(text, q, maxLen=160){
+  if(!text) return '';
+  if(!q) return text.length>maxLen ? text.slice(0,maxLen)+'…' : text;
+  const idx=text.toLowerCase().indexOf(q.toLowerCase());
+  let excerpt=text;
+  if(idx>40){ excerpt='…'+text.slice(idx-30); }
+  if(excerpt.length>maxLen) excerpt=excerpt.slice(0,maxLen)+'…';
+  return highlight(excerpt, q);
+}
+
+function renderRecipeSearch(){
+  const ingInput=(document.getElementById('ingredient-srch')||{}).value||'';
+  const ingQuery=ingInput.trim().toLowerCase();
+
+  // Build popular ingredient tag suggestions from all logged dishes
+  const allIngs={};
+  Object.values(data).flatMap(d=>d.dishes||[]).forEach(d=>{
+    (d.ingredients||[]).forEach(ing=>{
+      const k=ing.toLowerCase();
+      allIngs[k]=(allIngs[k]||0)+1;
+    });
+  });
+  const topIngs=Object.entries(allIngs).sort((a,b)=>b[1]-a[1]).slice(0,8).map(e=>e[0]);
+  const tagContainer=document.getElementById('ingredient-tags');
+  if(tagContainer){
+    tagContainer.innerHTML=topIngs.map(ing=>{
+      const active=ingQuery===ing;
+      return`<button onclick="setIngredientTag('${ing}')" style="font-size:9px;font-weight:500;letter-spacing:.06em;padding:2px 9px;border-radius:10px;border:1px solid ${active?'var(--ink)':'var(--border-mid)'};background:${active?'var(--ink)':'transparent'};color:${active?'var(--cream)':'var(--text-muted)'};cursor:pointer;font-family:inherit;transition:all .12s">${ing}</button>`;
+    }).join('');
+  }
+
+  let results=[];
+  COUNTRIES.forEach(c=>{
+    const dishes=(data[c.name]||{}).dishes||[];
+    dishes.forEach((d,i)=>{ results.push({country:c.name, flag:c.flag, dish:d, idx:i}); });
+  });
+
+  if(recipeTypeFilter!=='all') results=results.filter(r=>r.dish.type===recipeTypeFilter);
+
+  // Filter by ingredient
+  if(ingQuery){
+    results=results.filter(r=>(r.dish.ingredients||[]).some(ing=>ing.toLowerCase().includes(ingQuery)));
+  }
+
+  // Filter by text query — searches name, recipe, review, country
+  const q=recipeQuery.trim().toLowerCase();
+  if(q){
+    results=results.filter(r=>{
+      const d=r.dish;
+      return (d.name||'').toLowerCase().includes(q)
+        || (d.recipe||'').toLowerCase().includes(q)
+        || (d.review||'').toLowerCase().includes(q)
+        || r.country.toLowerCase().includes(q)
+        || (d.ingredients||[]).some(ing=>ing.toLowerCase().includes(q));
+    });
+  }
+
+  if(recipeSort==='rating') results.sort((a,b)=>(b.dish.rating||0)-(a.dish.rating||0));
+  else if(recipeSort==='date') results.sort((a,b)=>((b.dish.cookedDate||'')).localeCompare(a.dish.cookedDate||''));
+  else results.sort((a,b)=>a.country.localeCompare(b.country));
+
+  const meta=document.getElementById('recipe-meta');
+  const container=document.getElementById('recipe-results');
+  const total=Object.values(data).flatMap(d=>d.dishes||[]).length;
+
+  meta.textContent=total===0
+    ? 'No dishes logged yet — head to the Tracker tab to add some.'
+    : `${results.length} dish${results.length!==1?'es':''} found`;
+
+  if(results.length===0){
+    container.innerHTML=`<div class="recipe-no-results">${total===0?'Start logging dishes in the Tracker tab to build your recipe collection.':'No matches — try a different search or ingredient.'}</div>`;
+    return;
+  }
+
+  container.innerHTML=results.map(r=>{
+    const d=r.dish;
+    const nameHl=highlight(d.name, recipeQuery.trim());
+    const countryHl=highlight(r.country, recipeQuery.trim());
+    const hasBody=!!(d.recipe||d.review||d.source||(d.ingredients||[]).length);
+    const ingChips=(d.ingredients||[]).map(ing=>{
+      const isMatch=ingQuery&&ing.toLowerCase().includes(ingQuery);
+      return`<span style="font-size:10px;padding:1px 8px;border-radius:10px;border:1px solid ${isMatch?'var(--terracotta)':'var(--border)'};background:${isMatch?'var(--terra-light)':'var(--paper)'};color:${isMatch?'var(--terracotta)':'var(--text-muted)'}">${highlight(ing,ingQuery||recipeQuery.trim())}</span>`;
+    }).join('');
+    return`<div class="recipe-result" onclick="openFromRecipe('${esc(r.country)}')">
+      <div class="recipe-result-header">
+        <span class="recipe-result-flag">${r.flag}</span>
+        <div style="flex:1;min-width:0">
+          <div class="recipe-result-country">${countryHl}</div>
+          <div class="recipe-result-name">${nameHl}</div>
+        </div>
+        <div class="recipe-result-meta">
+          <span class="dish-type ${d.type}">${d.type}</span>
+          ${d.rating?`<span style="color:var(--mustard);font-size:13px;letter-spacing:-1px">${'★'.repeat(d.rating)}</span>`:''}
+          ${d.cookedDate?`<span style="font-size:10px;color:var(--text-faint)">${d.cookedDate}</span>`:''}
+        </div>
+      </div>
+      ${hasBody?`<div class="recipe-result-body">
+        ${ingChips?`<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:${d.review||d.recipe?'8px':'0'}">${ingChips}</div>`:''}
+        ${d.review?`<div class="recipe-snippet" style="font-style:italic;margin-bottom:${d.recipe?'6px':'0'}">"${snippet(d.review, recipeQuery.trim())}"</div>`:''}
+        ${d.recipe?`<div class="recipe-snippet">${snippet(d.recipe, recipeQuery.trim())}</div>`:''}
+        ${d.source?`<a class="source-link" href="${d.source}" target="_blank" rel="noopener" onclick="event.stopPropagation()">View recipe source ↗</a>`:''}
+      </div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function setIngredientTag(ing){
+  const input=document.getElementById('ingredient-srch');
+  if(!input)return;
+  // toggle off if already active
+  if(input.value.trim().toLowerCase()===ing){ input.value=''; }
+  else { input.value=ing; }
+  renderRecipeSearch();
+}
+
+function openFromRecipe(name){
+  switchTab('tracker');
+  openCountry(name);
+}
+function esc(s){return(s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;')}
+function esc2(s){return(s||'').replace(/"/g,'&quot;').replace(/</g,'&lt;')}
+function overlayClick(e){if(e.target===document.getElementById('overlay'))closePanel();}
+function closePanel(){activeCountry=null;showForm=false;editIdx=null;formStar=0;renderPanel();}
+function openCountry(name,addMode){activeCountry=name;showForm=!!addMode;editIdx=null;formStar=0;renderPanel();}
+function setFilter(f){filter=f;['all','done','todo'].forEach(x=>document.getElementById('f-'+x).classList.toggle('active',x===f));renderGrid();}
+function onSearch(v){search=v;renderGrid();}
+function startAdd(){showForm=true;editIdx=null;formStar=0;renderPanel();}
+function startEdit(i){editIdx=i;showForm=true;const d=(data[activeCountry]||{}).dishes[i];formStar=d&&d.rating?d.rating:0;renderPanel();}
+function cancelForm(){showForm=false;editIdx=null;formStar=0;renderPanel();}
+function toggleRecipe(k){recipeOpen[k]=!recipeOpen[k];renderPanel();}
+function hoverS(n){document.querySelectorAll('.star-btn').forEach((b,i)=>b.classList.toggle('lit',(n>0&&n>i)||(n===0&&formStar>i)));}
+function pickStar(n){formStar=formStar===n?0:n;renderPanel();}
+function saveDish(idx){
+  const name=(document.getElementById('f-name').value||'').trim();
+  if(!name)return;
+  const ingRaw=(document.getElementById('f-ingredients').value||'').trim();
+  const ingredients=ingRaw?ingRaw.split(',').map(s=>s.trim()).filter(Boolean):[];
+  const dish={
+    name,
+    type:document.getElementById('f-type').value,
+    rating:formStar,
+    ingredients,
+    review:(document.getElementById('f-review').value||'').trim(),
+    recipe:(document.getElementById('f-recipe').value||'').trim(),
+    source:(document.getElementById('f-source').value||'').trim(),
+    cookedDate:document.getElementById('f-date').value
+  };
+  if(!data[activeCountry])data[activeCountry]={dishes:[]};
+  if(idx==='null'||idx===null){data[activeCountry].dishes.push(dish);}
+  else{data[activeCountry].dishes[idx]=dish;}
+  save();showForm=false;editIdx=null;formStar=0;renderStats();renderGrid();renderMap();renderPanel();
+}
+function removeDish(i){
+  if(!data[activeCountry])return;
+  data[activeCountry].dishes.splice(i,1);
+  if(!data[activeCountry].dishes.length)delete data[activeCountry];
+  save();renderStats();renderGrid();renderMap();renderPanel();
+}
+
+// ── Countdown to 31 Dec 2026 ──
+function updateCountdown(){
+  const deadline=new Date('2026-12-31T23:59:59');
+  const now=new Date();
+  const diff=deadline-now;
+  if(diff<=0){
+    ['days','hours','mins','secs'].forEach(u=>document.getElementById('cd-'+u).textContent='0');
+    document.getElementById('cd-urgency').textContent='The challenge is over!';
+    return;
+  }
+  const days=Math.floor(diff/864e5);
+  const hours=Math.floor((diff%864e5)/36e5);
+  const mins=Math.floor((diff%36e5)/6e4);
+  const secs=Math.floor((diff%6e4)/1e3);
+  document.getElementById('cd-days').textContent=String(days).padStart(2,'0');
+  document.getElementById('cd-hours').textContent=String(hours).padStart(2,'0');
+  document.getElementById('cd-mins').textContent=String(mins).padStart(2,'0');
+  document.getElementById('cd-secs').textContent=String(secs).padStart(2,'0');
+
+  const done=COUNTRIES.filter(c=>getStatus(c.name)==='done').length;
+  const remaining=COUNTRIES.length-done;
+  const weeksLeft=Math.max(1,Math.floor(days/7));
+  let msg='';
+  if(remaining===0){ msg='All countries complete — challenge done!'; }
+  else if(days>300){ msg=`${remaining} countries to go — plenty of time, get cooking!`; }
+  else if(days>180){ msg=`${remaining} countries left — roughly one every ${Math.floor(days/remaining)} days.`; }
+  else if(days>60){ msg=`${weeksLeft} weeks left — you need about ${(remaining/weeksLeft).toFixed(1)} countries per week.`; }
+  else if(days>14){ msg=`Getting tight — ${remaining} countries in ${days} days!`; }
+  else { msg=`Final stretch — ${remaining} countries and only ${days} days left!`; }
+  document.getElementById('cd-urgency').textContent=msg;
+}
+
+document.addEventListener('DOMContentLoaded', function(){
+  updateCountdown();
+  setInterval(updateCountdown, 1000);
+  renderStats();
+  renderGrid();
+});
+</script>
+<script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
+<script>
+// D3 and TopoJSON are now loaded — safe to init the map
+initMap();
+</script>
+</body>
+</html>
